@@ -2,30 +2,40 @@ import * as io from '@actions/io';
 import cp from 'child_process';
 import * as core from '@actions/core';
 import path from 'path';
-import { install } from './install';
+import { installBinaryen, installTinyGo } from './install';
 
 setup();
 
+// NOTE: We only allow configuration for TinyGo version.
+// The Binaryen version is controlled by this GitHub Action.
+//
+// TODO: Allow Binaryen version to be configurable.
 async function setup() {
   try {
-    const version = core.getInput('tinygo-version');
-    core.info(`Setting up tinygo version ${version}`);
+    let toolName = 'binaryen'
+    let version = '109';
+    core.info(`Setting up ${toolName} version ${version}`);
+    const binaryenInstallDir = await installBinaryen(version); // current latest (June 2022)
+    await addToPath(binaryenInstallDir, toolName);
 
-    const installDir = await install(version);
-    await addTinyGoToPath(installDir);
+    toolName = 'tinygo';
+    version = core.getInput('${toolName}-version');
+    core.info(`Setting up ${toolName} version ${version}`);
+    const tinyGoInstallDir = await installTinyGo(version);
+    await addToPath(tinyGoInstallDir, toolName);
   } catch (error: any) {
     core.setFailed(error.message);
   }
 }
 
-async function addTinyGoToPath(installDir: string) {
-  core.info(`Adding ${installDir}/tinygo/bin to PATH`);
-  core.addPath(path.join(installDir, 'tinygo', 'bin'));
-  const found = await io.findInPath('tinygo');
+async function addToPath(installDir: string, toolName: string) {
+  core.info(`Adding ${installDir}/${toolName}/bin to PATH`);
+  core.addPath(path.join(installDir, toolName, 'bin'));
+  const found = await io.findInPath(toolName);
   core.debug(`Found in path: ${found}`);
-  const tinygo = await io.which('tinygo');
-  printCommand(`${tinygo} version`);
-  printCommand(`${tinygo} env`);
+  const tool = await io.which(toolName);
+  printCommand(`${tool} version`);
+  printCommand(`${tool} env`);
 }
 
 function printCommand(command: string) {
