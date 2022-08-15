@@ -1,6 +1,6 @@
-name: 'Setup TinyGo'
-description: 'Set up a specific version of TinyGo and add it to the PATH'
-author: acifani
+name: 'Setup TinyGo with Binaryen'
+description: 'Set up a specific version of TinyGo (and Binaryen) and add it to the PATH'
+author: integralist
 branding:
   icon: 'play'
   color: 'blue'
