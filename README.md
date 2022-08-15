@@ -50,3 +50,7 @@ steps:
     with:
       tinygo-version: 0.20.0
 ```
+
+## Why?
+
+This is a fork of https://github.com/acifani/setup-tinygo and the reason for forking was to add support for `binaryen`. I had opened an issue ([here](https://github.com/acifani/setup-tinygo/issues/2)) but it received no response of any kind and I wasn't in a position to wait around so I decided I'd fork and implement the necessary changes myself.
