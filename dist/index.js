@@ -35,27 +35,49 @@ const core = __importStar(__nccwpck_require__(186));
 const path_1 = __importDefault(__nccwpck_require__(622));
 const install_1 = __nccwpck_require__(39);
 setup();
+// NOTE: We only allow configuration for TinyGo version.
+// The Binaryen version is controlled by this GitHub Action.
+//
+// TODO: Allow Binaryen version to be configurable.
 async function setup() {
     try {
-        const version = core.getInput('tinygo-version');
-        core.info(`Setting up tinygo version ${version}`);
-        const installDir = await (0, install_1.install)(version);
-        await addTinyGoToPath(installDir);
+        let toolName = 'binaryen';
+        let version = '109';
+        core.info(`Setting up ${toolName} version ${version}`);
+        const binaryenInstallDir = await (0, install_1.installBinaryen)(version); // current latest (June 2022)
+        await addToPath(binaryenInstallDir, toolName, version);
+        toolName = 'tinygo';
+        version = core.getInput(`${toolName}-version`);
+        core.info(`Setting up ${toolName} version ${version}`);
+        const tinyGoInstallDir = await (0, install_1.installTinyGo)(version);
+        await addToPath(tinyGoInstallDir, toolName, version);
     }
     catch (error) {
         core.setFailed(error.message);
     }
 }
-async function addTinyGoToPath(installDir) {
-    core.info(`Adding ${installDir}/tinygo/bin to PATH`);
-    core.addPath(path_1.default.join(installDir, 'tinygo', 'bin'));
-    const found = await io.findInPath('tinygo');
-    core.debug(`Found in path: ${found}`);
-    const tinygo = await io.which('tinygo');
-    printCommand(`${tinygo} version`);
-    printCommand(`${tinygo} env`);
+// TODO: Redesign the code as having this function for both tinygo and binaryen is fugly.
+async function addToPath(installDir, toolName, version) {
+    let executable = toolName;
+    if (toolName == 'binaryen') {
+        toolName = `${toolName}-version_${version}`;
+        executable = 'wasm-opt';
+    }
+    core.info(`Adding ${installDir}/${toolName}/bin to PATH`);
+    core.addPath(path_1.default.join(installDir, toolName, 'bin'));
+    const found = await io.findInPath(executable);
+    core.info(`Found in path: ${found}`);
+    const bin = await io.which(executable);
+    if (executable == "tinygo") {
+        printCommand(`${bin} version`);
+        printCommand(`${bin} env`);
+    }
+    if (executable == "wasm-opt") {
+        printCommand(`${bin} --version`);
+    }
 }
 function printCommand(command) {
+    core.info(`command to execute: ${command}`);
     const output = child_process_1.default.execSync(command).toString();
     core.info(output);
 }
@@ -68,6 +90,7 @@ function printCommand(command) {
 
 "use strict";
 
+// TODO: Refactor code so we don't have duplicate functions (considering 95% of the logic is the same).
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -88,43 +111,83 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.install = void 0;
+exports.installTinyGo = exports.installBinaryen = void 0;
 const tool = __importStar(__nccwpck_require__(784));
 const core = __importStar(__nccwpck_require__(186));
 const sys_1 = __nccwpck_require__(63);
-const toolName = 'tinygo';
 const arch = (0, sys_1.getArch)();
 const platform = (0, sys_1.getPlatform)();
-async function install(version) {
-    core.debug(`Checking cache for tinygo v${version} ${arch}`);
+async function installBinaryen(version) {
+    const toolName = 'binaryen';
+    let a = arch;
+    if (arch === 'amd64') {
+        a = 'x86_64'; // Binaryen only offers arm64 and x86_64.
+    }
+    let p = platform;
+    if (platform === 'darwin') {
+        p = 'macos'; // Binaryen names its Darwin files using commercial name.
+    }
+    core.info(`Checking cache for ${toolName} v${version} ${a}`);
     const cachedDirectory = tool.find(toolName, version, arch);
     if (cachedDirectory) {
         // tool version found in cache
         return cachedDirectory;
     }
-    core.debug(`Downloading tinygo v${version} for ${platform} ${arch}`);
+    core.info(`Downloading ${toolName} v${version} for ${p} ${a}`);
     try {
-        const downloadPath = await download(version);
-        const extractedPath = await extractArchive(downloadPath);
-        const cachedPath = await tool.cacheDir(extractedPath, toolName, version, arch);
+        const downloadPath = await downloadBinaryen(version, a, p);
+        const extractedPath = await extractArchive(downloadPath, toolName);
+        core.info(`Extracted to: ${extractedPath}`);
+        const cachedPath = await tool.cacheDir(extractedPath, toolName, version, a);
+        core.info(`Cached path: ${cachedPath}`);
         return cachedPath;
     }
     catch (error) {
         throw new Error(`Failed to download version ${version}: ${error}`);
     }
 }
-exports.install = install;
-async function download(version) {
-    const extension = platform === 'windows' ? 'zip' : 'tar.gz';
-    const downloadURL = `https://github.com/tinygo-org/tinygo/releases/download/v${version}/tinygo${version}.${platform}-${arch}.${extension}`;
-    core.debug(`Downloading from ${downloadURL}`);
+exports.installBinaryen = installBinaryen;
+async function downloadBinaryen(version, a, p) {
+    const extension = 'tar.gz';
+    const downloadURL = `https://github.com/WebAssembly/binaryen/releases/download/version_${version}/binaryen-version_${version}-${a}-${p}.${extension}`;
+    core.info(`Downloading from ${downloadURL}`);
     const downloadPath = await tool.downloadTool(downloadURL);
-    core.debug(`Downloaded tinygo release to ${downloadPath}`);
+    core.info(`Downloaded binaryen release to ${downloadPath}`);
     return downloadPath;
 }
-async function extractArchive(downloadPath) {
+async function installTinyGo(version) {
+    const toolName = 'tinygo';
+    core.info(`Checking cache for ${toolName} v${version} ${arch}`);
+    const cachedDirectory = tool.find(toolName, version, arch);
+    if (cachedDirectory) {
+        // tool version found in cache
+        return cachedDirectory;
+    }
+    core.info(`Downloading ${toolName} v${version} for ${platform} ${arch}`);
+    try {
+        const downloadPath = await downloadTinyGo(version);
+        const extractedPath = await extractArchive(downloadPath, toolName);
+        core.info(`Extracted to: ${extractedPath}`);
+        const cachedPath = await tool.cacheDir(extractedPath, toolName, version, arch);
+        core.info(`Cached path: ${cachedPath}`);
+        return cachedPath;
+    }
+    catch (error) {
+        throw new Error(`Failed to download version ${version}: ${error}`);
+    }
+}
+exports.installTinyGo = installTinyGo;
+async function downloadTinyGo(version) {
+    const extension = platform === 'windows' ? 'zip' : 'tar.gz';
+    const downloadURL = `https://github.com/tinygo-org/tinygo/releases/download/v${version}/tinygo${version}.${platform}-${arch}.${extension}`;
+    core.info(`Downloading from ${downloadURL}`);
+    const downloadPath = await tool.downloadTool(downloadURL);
+    core.info(`Downloaded tinygo release to ${downloadPath}`);
+    return downloadPath;
+}
+async function extractArchive(downloadPath, toolName) {
     let extractedPath = '';
-    if (platform === 'windows') {
+    if (platform === 'windows' && toolName == "tinygo") {
         extractedPath = await tool.extractZip(downloadPath);
     }
     else {
