@@ -1,7 +1,7 @@
 # setup-tinygo
 
-[![Check dist/](https://github.com/acifani/setup-tinygo/actions/workflows/check-dist.yml/badge.svg)](https://github.com/acifani/setup-tinygo/actions/workflows/check-dist.yml)
-[![Validate](https://github.com/acifani/setup-tinygo/actions/workflows/validate.yml/badge.svg)](https://github.com/acifani/setup-tinygo/actions/workflows/validate.yml)
+[![Check dist/](https://github.com/integralist/setup-tinygo/actions/workflows/check-dist.yml/badge.svg)](https://github.com/integralist/setup-tinygo/actions/workflows/check-dist.yml)
+[![Validate](https://github.com/integralist/setup-tinygo/actions/workflows/validate.yml/badge.svg)](https://github.com/integralist/setup-tinygo/actions/workflows/validate.yml)
 
 This actions sets up a TinyGo environment for GitHub Actions.
 
@@ -12,7 +12,7 @@ This actions sets up a TinyGo environment for GitHub Actions.
 ```yaml
 steps:
   - uses: actions/checkout@v2
-  - uses: acifani/setup-tinygo@v1
+  - uses: integralist/setup-tinygo@v1
     with:
       tinygo-version: 0.20.0
 ```
@@ -29,7 +29,7 @@ jobs:
     name: TinyGo ${{ matrix.tinygo }}
     steps:
       - uses: actions/checkout@v2
-      - uses: acifani/setup-tinygo@v1
+      - uses: integralist/setup-tinygo@v1
         with:
           tinygo-version: ${{ matrix.tinygo }}
 ```
@@ -38,7 +38,7 @@ jobs:
 
 TinyGo needs Go and, by default, this action will use whatever
 version is available in the runner. If you want to control the
-Go version, you can use `actions/setup-go` before `acifani/setup-tinygo`
+Go version, you can use `actions/setup-go` before `integralist/setup-tinygo`
 
 ```yaml
 steps:
@@ -46,7 +46,7 @@ steps:
   - uses: actions/setup-go@v2
     with:
       go-version: 1.17
-  - uses: acifani/setup-tinygo@v1
+  - uses: integralist/setup-tinygo@v1
     with:
       tinygo-version: 0.20.0
 ```
