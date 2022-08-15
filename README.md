@@ -12,7 +12,7 @@ This actions sets up a TinyGo environment for GitHub Actions.
 ```yaml
 steps:
   - uses: actions/checkout@v2
-  - uses: integralist/setup-tinygo@v1
+  - uses: Integralist/setup-tinygo@v1.0.0
     with:
       tinygo-version: 0.20.0
 ```
@@ -29,7 +29,7 @@ jobs:
     name: TinyGo ${{ matrix.tinygo }}
     steps:
       - uses: actions/checkout@v2
-      - uses: integralist/setup-tinygo@v1
+      - uses: Integralist/setup-tinygo@v1.0.0
         with:
           tinygo-version: ${{ matrix.tinygo }}
 ```
@@ -46,7 +46,7 @@ steps:
   - uses: actions/setup-go@v2
     with:
       go-version: 1.17
-  - uses: integralist/setup-tinygo@v1
+  - uses: Integralist/setup-tinygo@v1.0.0
     with:
       tinygo-version: 0.20.0
 ```
